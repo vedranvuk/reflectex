@@ -64,6 +64,4 @@ func TestStringToValue(t *testing.T) {
 		}
 	)
 
-	test := &Test{}
-
 }

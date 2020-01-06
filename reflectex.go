@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	ErrReflectEx        = errorex.New("reflectex")
-	ErrInvalidParam     = ErrReflectEx.Wrap("invalid parameter")
-	ErrUnsupportedValue = ErrReflectEx.Wrap("invalid parameter")
+	ErrReflectEx    = errorex.New("reflectex")
+	ErrInvalidParam = ErrReflectEx.Wrap("invalid parameter")
+	ErrConvert      = ErrReflectEx.WrapFormat("cannot convert '%s' to type '%s'")
 )
 
 // LazyStructCopy copies src fields that have a coresponding dst field.
@@ -60,30 +60,48 @@ func StructPartialEqual(x, y interface{}) bool {
 }
 
 // StringToValue converts a string to a value of v's type and returns it or an error.
-func StringToValue(s string, v reflect.Value) (reflect.Value, error) {
+func StringToValue(s string, v reflect.Value) (rv reflect.Value, err error) {
+	if !v.IsValid() {
+		return reflect.Value{}, ErrInvalidParam
+	}
 	switch v.Kind() {
 	case reflect.Bool:
-		if b, e := strconv.ParseBool(s); e == nil {
-			return reflect.ValueOf(b), nil
+		var b bool
+		b, err = strconv.ParseBool(s)
+		if err != nil {
+			break
 		}
+		rv = reflect.ValueOf(b)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if n, e := strconv.ParseInt(s, 10, 64); e == nil {
-			return reflect.ValueOf(n).Convert(v.Type()), nil
+		var n int64
+		n, err = strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			break
 		}
+		rv = reflect.ValueOf(n).Convert(v.Type())
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		if n, e := strconv.ParseUint(s, 10, 64); e == nil {
-			return reflect.ValueOf(n).Convert(v.Type()), nil
+		var n uint64
+		n, err = strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			break
 		}
+		rv = reflect.ValueOf(n).Convert(v.Type())
 	case reflect.Float32:
-		if n, e := strconv.ParseFloat(s, 32); e == nil {
-			return reflect.ValueOf(n).Convert(v.Type()), nil
+		var n float64
+		n, err = strconv.ParseFloat(s, 32)
+		if err != nil {
+			break
 		}
+		rv = reflect.ValueOf(n).Convert(v.Type())
 	case reflect.Float64:
-		if n, e := strconv.ParseFloat(s, 64); e == nil {
-			return reflect.ValueOf(n).Convert(v.Type()), nil
+		var n float64
+		n, err = strconv.ParseFloat(s, 64)
+		if err != nil {
+			break
 		}
+		rv = reflect.ValueOf(n).Convert(v.Type())
 	case reflect.String:
-		return reflect.ValueOf(s), nil
+		rv = reflect.ValueOf(s)
 	case reflect.Array:
 		av := reflect.Indirect(v)
 		a := strings.Split(s, ",")
@@ -125,7 +143,12 @@ func StringToValue(s string, v reflect.Value) (reflect.Value, error) {
 			mv.SetMapIndex(key, val)
 		}
 		return mv, nil
-	}
+	case reflect.Struct:
 
-	return reflect.Value{}, ErrUnsupportedValue
+	case reflect.Ptr:
+	}
+	if err != nil {
+		return reflect.Value{}, ErrConvert.WithArgs(s, v.Type().Name())
+	}
+	return
 }
