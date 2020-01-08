@@ -1,6 +1,7 @@
 package reflectex
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -118,4 +119,41 @@ func TestStringToInterface(t *testing.T) {
 	if err := StringToInterface("allice=small,julie=petite,annie=fat(ish)", &m); err != nil {
 		t.Fatal("map", err)
 	}
+}
+
+func TestTest(t *testing.T) {
+
+	return
+
+	av := [5]int{0, 1, 2, 3, 4}
+	fmt.Println(av)
+
+	sv := []string{"one", "two", "three"}
+	fmt.Println(sv)
+
+	ia := []interface{}{"field one", 2, [3]int{0, 0, 0}}
+	fmt.Println(ia)
+
+	mv := map[string]int{
+		"one":   1,
+		"two":   2,
+		"three": 3,
+	}
+	fmt.Println(mv)
+
+	type fvt func(truth bool) (bool, error)
+	fv := func(truth bool) (bool, error) {
+		return !truth, nil
+	}
+	fmt.Println(reflect.ValueOf(fv).Type())
+
+	type Data struct {
+		Name string
+		Age  int
+	}
+	tv := &Data{"Jules", 69}
+	fmt.Println(tv)
+
+	cv := 5 + 7i
+	fmt.Println(cv)
 }

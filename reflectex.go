@@ -6,6 +6,7 @@
 package reflectex
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -63,11 +64,15 @@ func StructPartialEqual(x, y interface{}) bool {
 	return false
 }
 
-// StringToValue converts a string to a value of v's type and returns it or an error.
-func StringToValue(s string, v reflect.Value) (rv reflect.Value, err error) {
+// StringToValue sets v's value to a value parsed from s.
+// s must be convertable to v or an error is returned.
+//
+// TODO Describe syntax.
+func StringToValue(s string, v reflect.Value) (err error) {
 	if !v.IsValid() {
-		return reflect.Value{}, ErrInvalidParam
+		return ErrInvalidParam
 	}
+	var parsedval reflect.Value
 	switch v.Kind() {
 	case reflect.Bool:
 		var b bool
@@ -75,174 +80,95 @@ func StringToValue(s string, v reflect.Value) (rv reflect.Value, err error) {
 		if err != nil {
 			break
 		}
-		rv = reflect.ValueOf(b)
+		parsedval = reflect.ValueOf(b)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		var n int64
 		n, err = strconv.ParseInt(s, 10, 64)
 		if err != nil {
 			break
 		}
-		rv = reflect.ValueOf(n).Convert(v.Type())
+		parsedval = reflect.ValueOf(n).Convert(v.Type())
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		var n uint64
 		n, err = strconv.ParseUint(s, 10, 64)
 		if err != nil {
 			break
 		}
-		rv = reflect.ValueOf(n).Convert(v.Type())
+		parsedval = reflect.ValueOf(n).Convert(v.Type())
 	case reflect.Float32:
 		var n float64
 		n, err = strconv.ParseFloat(s, 32)
 		if err != nil {
 			break
 		}
-		rv = reflect.ValueOf(n).Convert(v.Type())
+		parsedval = reflect.ValueOf(n).Convert(v.Type())
 	case reflect.Float64:
 		var n float64
 		n, err = strconv.ParseFloat(s, 64)
 		if err != nil {
 			break
 		}
-		rv = reflect.ValueOf(n).Convert(v.Type())
+		parsedval = reflect.ValueOf(n).Convert(v.Type())
+	case reflect.Complex64:
+		fmt.Scan()
+		// TODO
+	case reflect.Complex128:
+		// TODO
 	case reflect.String:
-		rv = reflect.ValueOf(s)
+		parsedval = reflect.ValueOf(s)
 	case reflect.Array:
-		av := reflect.Indirect(v)
+		parsedval = reflect.Indirect(reflect.New(v.Type()))
 		a := strings.Split(s, ",")
 		for i, l := 0, v.Len(); i < l && i < len(a); i, l = i+1, l {
-			rv, re := StringToValue(strings.TrimSpace(a[i]), v.Index(i))
-			if re == nil {
-				av.Index(i).Set(rv)
+			if err = StringToValue(strings.TrimSpace(a[i]), parsedval.Index(i)); err != nil {
+				break
 			}
 		}
-		return av, nil
 	case reflect.Slice:
-		st := v.Type().Elem()
-		a := strings.Split(s, ";")
-		sv := reflect.MakeSlice(reflect.SliceOf(st), len(a), len(a))
+		a := strings.Split(s, ",")
+		parsedval = reflect.MakeSlice(reflect.SliceOf(v.Type().Elem()), len(a), len(a))
 		for i := 0; i < len(a); i++ {
-			rv, re := StringToValue(a[i], sv.Index(0))
-			if re == nil {
-				sv.Index(i).Set(rv)
+			if err = StringToValue(a[i], parsedval.Index(i)); err != nil {
+				break
 			}
 		}
-		return sv, nil
 	case reflect.Map:
 		mt := reflect.MapOf(v.Type().Key(), v.Type().Elem())
-		mv := reflect.MakeMap(mt)
-		a := strings.Split(s, ";")
+		parsedval = reflect.MakeMap(mt)
+		a := strings.Split(s, ",")
 		for _, s := range a {
 			pair := strings.Split(s, "=")
 			if len(pair) != 2 {
-				continue
+				err = ErrParse
+				break
 			}
-			key, err := StringToValue(pair[0], reflect.Zero(mt.Key()))
-			if err != nil {
-				continue
+			key := reflect.Indirect(reflect.New(mt.Key()))
+			if err = StringToValue(pair[0], key); err != nil {
+				break
 			}
-			val, err := StringToValue(pair[1], reflect.Zero(mt.Elem()))
-			if err != nil {
-				continue
+			val := reflect.Indirect(reflect.New(mt.Elem()))
+			if err = StringToValue(pair[1], val); err != nil {
+				break
 			}
-			mv.SetMapIndex(key, val)
+			parsedval.SetMapIndex(key, val)
 		}
-		return mv, nil
 	case reflect.Struct:
-
-	case reflect.Ptr:
+		// TODO
+	case reflect.Func:
+		// TODO
+	case reflect.Chan:
+		// TODO
+	default:
+		err = ErrUnsupported
 	}
-	if err != nil {
-		return reflect.Value{}, ErrConvert.WithArgs(s, v.Type().Name())
+	if parsedval.IsValid() {
+		v.Set(parsedval)
 	}
-	return
+	return err
 }
 
 // StringToInterface or error.
 func StringToInterface(s string, i interface{}) error {
 	v := reflect.Indirect(reflect.ValueOf(i))
-	if !v.IsValid() {
-		return ErrInvalidParam
-	}
-	var rv reflect.Value
-	var err error
-	switch v.Kind() {
-	case reflect.Bool:
-		var b bool
-		b, err = strconv.ParseBool(s)
-		if err != nil {
-			break
-		}
-		rv = reflect.ValueOf(b)
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		var n int64
-		n, err = strconv.ParseInt(s, 10, 64)
-		if err != nil {
-			break
-		}
-		rv = reflect.ValueOf(n).Convert(v.Type())
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		var n uint64
-		n, err = strconv.ParseUint(s, 10, 64)
-		if err != nil {
-			break
-		}
-		rv = reflect.ValueOf(n).Convert(v.Type())
-	case reflect.Float32:
-		var n float64
-		n, err = strconv.ParseFloat(s, 32)
-		if err != nil {
-			break
-		}
-		rv = reflect.ValueOf(n).Convert(v.Type())
-	case reflect.Float64:
-		var n float64
-		n, err = strconv.ParseFloat(s, 64)
-		if err != nil {
-			break
-		}
-		rv = reflect.ValueOf(n).Convert(v.Type())
-	case reflect.String:
-		rv = reflect.ValueOf(s)
-	case reflect.Array:
-		rv = reflect.Indirect(reflect.New(v.Type()))
-		a := strings.Split(s, ",")
-		for i, l := 0, v.Len(); i < l && i < len(a); i, l = i+1, l {
-			if err = StringToInterface(strings.TrimSpace(a[i]), rv.Index(i).Addr().Interface()); err != nil {
-				break
-			}
-		}
-	case reflect.Slice:
-		a := strings.Split(s, ",")
-		rv := reflect.MakeSlice(reflect.SliceOf(v.Type().Elem()), len(a), len(a))
-		for i := 0; i < len(a); i++ {
-			if err = StringToInterface(a[i], rv.Index(i).Addr().Interface()); err != nil {
-				break
-			}
-		}
-	case reflect.Map:
-		mt := reflect.MapOf(v.Type().Key(), v.Type().Elem())
-		rv = reflect.MakeMap(mt)
-		a := strings.Split(s, ",")
-		for _, s := range a {
-			pair := strings.Split(s, "=")
-			if len(pair) != 2 {
-				return ErrParse
-			}
-			key, err := StringToValue(pair[0], reflect.Zero(mt.Key()))
-			if err != nil {
-				return ErrParse
-			}
-			val, err := StringToValue(pair[1], reflect.Zero(mt.Elem()))
-			if err != nil {
-				return ErrParse
-			}
-			rv.SetMapIndex(key, val)
-		}
-	default:
-		return ErrUnsupported
-	}
-	if rv.IsValid() {
-		v.Set(rv)
-	}
-	return err
+	return StringToValue(s, v)
 }
