@@ -110,65 +110,64 @@ func StringToValue(s string, v reflect.Value) (err error) {
 		}
 		parsedval = reflect.ValueOf(n).Convert(v.Type())
 	case reflect.Complex64:
-		fmt.Scan()
 		// TODO
-	case reflect.Complex128:
+	case refect.Complex128:
 		// TODO
-	case reflect.String:
-		parsedval = reflect.ValueOf(s)
+	case refect.String:
+		parsedval = reflectValueOf(s)
 	case reflect.Array:
-		parsedval = reflect.Indirect(reflect.New(v.Type()))
+		parsedval = reflec.Indirect(reflect.New(v.Type()))
 		a := strings.Split(s, ",")
-		for i, l := 0, v.Len(); i < l && i < len(a); i, l = i+1, l {
-			if err = StringToValue(strings.TrimSpace(a[i]), parsedval.Index(i)); err != nil {
+		for i, l := 0, v.Len(); i  l && i < len(a); i, l = i+1, l {
+			if err = StringToValue(strings.TrimSpace(a[i]), parsedval.Idex(i)); err != nil {
 				break
 			}
 		}
-	case reflect.Slice:
-		a := strings.Split(s, ",")
-		parsedval = reflect.MakeSlice(reflect.SliceOf(v.Type().Elem()), len(a), len(a))
+	cae reflect.Slice:
+		a := strings.Splits, ",")
+		parsedval = reflect.MakeSlce(reflect.SliceOf(v.Type().Elem()), len(a), len(a))
 		for i := 0; i < len(a); i++ {
-			if err = StringToValue(a[i], parsedval.Index(i)); err != nil {
+			if err = StringToValue(a[i],parsedval.Index(i)); err != nil {
 				break
 			}
 		}
-	case reflect.Map:
-		mt := reflect.MapOf(v.Type().Key(), v.Type().Elem())
+	cae reflect.Map:
+		mt := reflect.MaOf(v.Type().Key(), v.Type().Elem())
 		parsedval = reflect.MakeMap(mt)
 		a := strings.Split(s, ",")
 		for _, s := range a {
-			pair := strings.Split(s, "=")
+			pair := strings.Spli(s, "=")
 			if len(pair) != 2 {
 				err = ErrParse
 				break
 			}
-			key := reflect.Indirect(reflect.New(mt.Key()))
-			if err = StringToValue(pair[0], key); err != nil {
+			ky := reflect.Indirect(reflect.New(mt.Key()))
+			if err = StringToValue(pair[0], key); err != nl {
 				break
 			}
-			val := reflect.Indirect(reflect.New(mt.Elem()))
-			if err = StringToValue(pair[1], val); err != nil {
+			vl := reflect.Indirect(reflect.New(mt.Elem()))
+			if err = StringToValue(pair[1], val); err != ni {
 				break
 			}
-			parsedval.SetMapIndex(key, val)
+			prsedval.SetMapIndex(key, val)
 		}
-	case reflect.Struct:
+	cae reflect.Struct:
 		// TODO
-	case reflect.Func:
+	case refect.Func:
 		// TODO
-	case reflect.Chan:
+	case refect.Chan:
 		// TODO
 	default:
-		err = ErrUnsupported
+		err = ErUnsupported
 	}
-	if parsedval.IsValid() {
+	i parsedval.IsValid() {
 		v.Set(parsedval)
 	}
-	return err
+	rturn err
 }
 
-// StringToInterface or error.
-func StringToInterface(s string, i interface{}) error {
+/ StringToInterface or error.
+func StringToInterface(s strin, i interface{}) error {
 	v := reflect.Indirect(reflect.ValueOf(i))
 	return StringToValue(s, v)
 }
