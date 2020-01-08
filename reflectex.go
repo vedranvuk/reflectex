@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
 
-// Package reflectex provides various reflect related utils.
+// Package reflectex provides various reflect based utils.
 package reflectex
 
 import (
@@ -16,10 +16,13 @@ import (
 var (
 	ErrReflectEx    = errorex.New("reflectex")
 	ErrInvalidParam = ErrReflectEx.Wrap("invalid parameter")
+	ErrParse        = ErrReflectEx.Wrap("parse error")
+	ErrUnsupported  = ErrReflectEx.Wrap("unsupported value")
 	ErrConvert      = ErrReflectEx.WrapFormat("cannot convert '%s' to type '%s'")
 )
 
-// LazyStructCopy copies src fields that have a coresponding dst field.
+// LazyStructCopy copies values from src fields that have
+// a coresponding field in dst to that field in dst.
 // Fields must have same name and type. Tags are ignored.
 // src and dest must be of struct type and addressable.
 func LazyStructCopy(src, dst interface{}) error {
@@ -43,6 +46,7 @@ func LazyStructCopy(src, dst interface{}) error {
 
 // StructPartialEqual compares two structs and tells if there is at least
 // one field in both that match both by name and type.
+// Tags in both x and y are ignored.
 func StructPartialEqual(x, y interface{}) bool {
 	xv := reflect.Indirect(reflect.ValueOf(x))
 	yv := reflect.Indirect(reflect.ValueOf(y))
@@ -151,4 +155,94 @@ func StringToValue(s string, v reflect.Value) (rv reflect.Value, err error) {
 		return reflect.Value{}, ErrConvert.WithArgs(s, v.Type().Name())
 	}
 	return
+}
+
+// StringToInterface or error.
+func StringToInterface(s string, i interface{}) error {
+	v := reflect.Indirect(reflect.ValueOf(i))
+	if !v.IsValid() {
+		return ErrInvalidParam
+	}
+	var rv reflect.Value
+	var err error
+	switch v.Kind() {
+	case reflect.Bool:
+		var b bool
+		b, err = strconv.ParseBool(s)
+		if err != nil {
+			break
+		}
+		rv = reflect.ValueOf(b)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		var n int64
+		n, err = strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			break
+		}
+		rv = reflect.ValueOf(n).Convert(v.Type())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		var n uint64
+		n, err = strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			break
+		}
+		rv = reflect.ValueOf(n).Convert(v.Type())
+	case reflect.Float32:
+		var n float64
+		n, err = strconv.ParseFloat(s, 32)
+		if err != nil {
+			break
+		}
+		rv = reflect.ValueOf(n).Convert(v.Type())
+	case reflect.Float64:
+		var n float64
+		n, err = strconv.ParseFloat(s, 64)
+		if err != nil {
+			break
+		}
+		rv = reflect.ValueOf(n).Convert(v.Type())
+	case reflect.String:
+		rv = reflect.ValueOf(s)
+	case reflect.Array:
+		rv = reflect.Indirect(reflect.New(v.Type()))
+		a := strings.Split(s, ",")
+		for i, l := 0, v.Len(); i < l && i < len(a); i, l = i+1, l {
+			if err = StringToInterface(strings.TrimSpace(a[i]), rv.Index(i).Addr().Interface()); err != nil {
+				break
+			}
+		}
+	case reflect.Slice:
+		a := strings.Split(s, ",")
+		rv := reflect.MakeSlice(reflect.SliceOf(v.Type().Elem()), len(a), len(a))
+		for i := 0; i < len(a); i++ {
+			if err = StringToInterface(a[i], rv.Index(i).Addr().Interface()); err != nil {
+				break
+			}
+		}
+	case reflect.Map:
+		mt := reflect.MapOf(v.Type().Key(), v.Type().Elem())
+		rv = reflect.MakeMap(mt)
+		a := strings.Split(s, ",")
+		for _, s := range a {
+			pair := strings.Split(s, "=")
+			if len(pair) != 2 {
+				return ErrParse
+			}
+			key, err := StringToValue(pair[0], reflect.Zero(mt.Key()))
+			if err != nil {
+				return ErrParse
+			}
+			val, err := StringToValue(pair[1], reflect.Zero(mt.Elem()))
+			if err != nil {
+				return ErrParse
+			}
+			rv.SetMapIndex(key, val)
+		}
+	default:
+		return ErrUnsupported
+	}
+	if rv.IsValid() {
+		v.Set(rv)
+	}
+	return err
 }

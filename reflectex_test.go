@@ -1,6 +1,7 @@
 package reflectex
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -56,12 +57,65 @@ func TestStructPartialEqual(t *testing.T) {
 
 func TestStringToValue(t *testing.T) {
 
-	type (
-		Test struct {
-			Name  string
-			Admin bool
-			Age   int
-		}
-	)
+	type Data struct {
+		String string
+		Array  [5]int
+		Slice  []string
+		Map    map[string]string
+	}
 
+	type Test struct {
+		Value    string
+		Expected error
+	}
+
+	data := &Data{
+		"string",
+		[5]int{0, 1, 2, 3, 4},
+		[]string{"one", "two", "three"},
+		map[string]string{
+			"apple":      "green",
+			"banana":     "yellow",
+			"grapefruit": "red",
+		},
+	}
+
+	dv := reflect.Indirect(reflect.ValueOf(data))
+	for i := 0; i < dv.NumField(); i++ {
+		// fmt.Println(dv.Type().Field(i).Name)
+	}
+
+}
+
+func TestStringToInterface(t *testing.T) {
+
+	s := ""
+	if err := StringToInterface("string", &s); err != nil {
+		t.Fatal("string", err)
+	}
+	if s != "string" {
+		t.Fatalf("StringToInterface(string) failed: want '%s', got '%s'", "string", s)
+	}
+
+	a := [5]int{0, 1, 2, 3, 4}
+	if err := StringToInterface("9,8,7,6,5", &a); err != nil {
+		t.Fatal("array", err)
+	}
+	if a != [5]int{9, 8, 7, 6, 5} {
+		t.Fatalf("StringToInterface(array) failed: want '%s', got '%v'", "[9 8 7 6 5]", a)
+	}
+
+	sl := []string{"one", "two", "three"}
+	if err := StringToInterface("red, green, blue", &sl); err != nil {
+		t.Fatal("slice", err)
+	}
+
+	m := map[string]string{
+		"apple":      "green",
+		"banana":     "yellow",
+		"grapefruit": "red",
+	}
+	if err := StringToInterface("allice=small,julie=petite,annie=fat(ish)", &m); err != nil {
+		t.Fatal("map", err)
+	}
 }
