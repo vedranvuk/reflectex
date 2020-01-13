@@ -6,7 +6,6 @@
 package reflectex
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -65,7 +64,7 @@ func StructPartialEqual(x, y interface{}) bool {
 }
 
 // StringToValue sets v's value to a value parsed from s.
-// s must be convertable to v or an error is returned.
+// s must be convertible to v or an error is returned.
 //
 // TODO Describe syntax.
 func StringToValue(s string, v reflect.Value) (err error) {
@@ -111,63 +110,63 @@ func StringToValue(s string, v reflect.Value) (err error) {
 		parsedval = reflect.ValueOf(n).Convert(v.Type())
 	case reflect.Complex64:
 		// TODO
-	case refect.Complex128:
+	case reflect.Complex128:
 		// TODO
-	case refect.String:
-		parsedval = reflectValueOf(s)
+	case reflect.String:
+		parsedval = reflect.ValueOf(s)
 	case reflect.Array:
-		parsedval = reflec.Indirect(reflect.New(v.Type()))
+		parsedval = reflect.Indirect(reflect.New(v.Type()))
 		a := strings.Split(s, ",")
-		for i, l := 0, v.Len(); i  l && i < len(a); i, l = i+1, l {
-			if err = StringToValue(strings.TrimSpace(a[i]), parsedval.Idex(i)); err != nil {
+		for i, l := 0, v.Len(); i < l && i < len(a); i, l = i+1, l {
+			if err = StringToValue(strings.TrimSpace(a[i]), parsedval.Index(i)); err != nil {
 				break
 			}
 		}
-	cae reflect.Slice:
-		a := strings.Splits, ",")
-		parsedval = reflect.MakeSlce(reflect.SliceOf(v.Type().Elem()), len(a), len(a))
+	case reflect.Slice:
+		a := strings.Split(s, ",")
+		parsedval = reflect.MakeSlice(reflect.SliceOf(v.Type().Elem()), len(a), len(a))
 		for i := 0; i < len(a); i++ {
-			if err = StringToValue(a[i],parsedval.Index(i)); err != nil {
+			if err = StringToValue(a[i], parsedval.Index(i)); err != nil {
 				break
 			}
 		}
-	cae reflect.Map:
-		mt := reflect.MaOf(v.Type().Key(), v.Type().Elem())
+	case reflect.Map:
+		mt := reflect.MapOf(v.Type().Key(), v.Type().Elem())
 		parsedval = reflect.MakeMap(mt)
 		a := strings.Split(s, ",")
 		for _, s := range a {
-			pair := strings.Spli(s, "=")
+			pair := strings.Split(s, "=")
 			if len(pair) != 2 {
 				err = ErrParse
 				break
 			}
-			ky := reflect.Indirect(reflect.New(mt.Key()))
-			if err = StringToValue(pair[0], key); err != nl {
+			key := reflect.Indirect(reflect.New(mt.Key()))
+			if err = StringToValue(pair[0], key); err != nil {
 				break
 			}
-			vl := reflect.Indirect(reflect.New(mt.Elem()))
-			if err = StringToValue(pair[1], val); err != ni {
+			val := reflect.Indirect(reflect.New(mt.Elem()))
+			if err = StringToValue(pair[1], val); err != nil {
 				break
 			}
-			prsedval.SetMapIndex(key, val)
+			parsedval.SetMapIndex(key, val)
 		}
-	cae reflect.Struct:
+	case reflect.Struct:
 		// TODO
-	case refect.Func:
+	case reflect.Func:
 		// TODO
-	case refect.Chan:
+	case reflect.Chan:
 		// TODO
 	default:
-		err = ErUnsupported
+		err = ErrUnsupported
 	}
-	i parsedval.IsValid() {
+	if parsedval.IsValid() {
 		v.Set(parsedval)
 	}
-	rturn err
+	return err
 }
 
-/ StringToInterface or error.
-func StringToInterface(s strin, i interface{}) error {
+// StringToInterface or error.
+func StringToInterface(s string, i interface{}) error {
 	v := reflect.Indirect(reflect.ValueOf(i))
 	return StringToValue(s, v)
 }
