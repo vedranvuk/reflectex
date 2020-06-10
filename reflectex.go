@@ -7,6 +7,7 @@ package reflectex
 
 import (
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -14,11 +15,16 @@ import (
 )
 
 var (
-	ErrReflectEx    = errorex.New("reflectex")
+	// ErrReflectEx is the base error of reflectex package.
+	ErrReflectEx = errorex.New("reflectex")
+	// ErrInvalidParam is returned when an invalid param is passed to a func.
 	ErrInvalidParam = ErrReflectEx.Wrap("invalid parameter")
-	ErrParse        = ErrReflectEx.Wrap("parse error")
-	ErrUnsupported  = ErrReflectEx.Wrap("unsupported value")
-	ErrConvert      = ErrReflectEx.WrapFormat("cannot convert '%s' to type '%s'")
+	// ErrParse is returned when a parse error occurs.
+	ErrParse = ErrReflectEx.Wrap("parse error")
+	// ErrUnsupported is returned when an unsupported value is encountered.
+	ErrUnsupported = ErrReflectEx.Wrap("unsupported value")
+	// ErrConvert is returned when a conversion is unable to complete.
+	ErrConvert = ErrReflectEx.WrapFormat("cannot convert '%s' to type '%s'")
 )
 
 // LazyStructCopy copies values from src fields that have
@@ -32,16 +38,55 @@ func LazyStructCopy(src, dst interface{}) error {
 		return ErrInvalidParam
 	}
 	for i := 0; i < srcv.NumField(); i++ {
-		tgt := dstv.FieldByName(srcv.Type().Field(i).Name)
+		name := srcv.Type().Field(i).Name
+		tgt := dstv.FieldByName(name)
 		if !tgt.IsValid() {
 			continue
 		}
 		if tgt.Kind() != srcv.Field(i).Kind() {
 			continue
 		}
+		if name == "_" {
+			continue
+		}
+		if name[0] >= 97 && name[0] <= 122 {
+			continue
+		}
 		tgt.Set(srcv.Field(i))
 	}
 	return nil
+}
+
+// FilterStruct returns a copy of in struct with specified fields removed.
+// In must be a pointer to a struct or a struct value.
+// Returned value is a struct value or nil in case of an error.
+func FilterStruct(in interface{}, filter ...string) interface{} {
+	v := reflect.Indirect(reflect.ValueOf(in))
+	if !v.IsValid() {
+		return nil
+	}
+	if v.Kind() != reflect.Struct {
+		return nil
+	}
+	fields := []reflect.StructField{}
+	for i := 0; i < v.NumField(); i++ {
+		if !v.Field(i).CanSet() {
+			continue
+		}
+		sort.Strings(filter)
+		pos := sort.SearchStrings(filter, v.Type().Field(i).Name)
+		if pos < len(filter) && filter[pos] == v.Type().Field(i).Name {
+			continue
+		}
+		fields = append(fields, v.Type().Field(i))
+	}
+	structType := reflect.StructOf(fields)
+	structVal := reflect.New(structType)
+
+	if err := LazyStructCopy(v.Interface(), structVal.Interface()); err != nil {
+		return nil
+	}
+	return structVal.Interface()
 }
 
 // StructPartialEqual compares two structs and tells if there is at least
@@ -117,7 +162,7 @@ func StringToValue(s string, v reflect.Value) (err error) {
 	case reflect.Array:
 		parsedval = reflect.Indirect(reflect.New(v.Type()))
 		a := strings.Split(s, ",")
-		for i, l := 0, v.Len(); i < l && i < len(a); i, l = i+1, l {
+		for i, l := 0, v.Len(); i < l && i < len(a); i++ {
 			if err = StringToValue(strings.TrimSpace(a[i]), parsedval.Index(i)); err != nil {
 				break
 			}
