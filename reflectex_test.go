@@ -10,6 +10,30 @@ import (
 	"time"
 )
 
+func TestStructPartialEqual(t *testing.T) {
+
+	type (
+		Src struct {
+			FieldA string
+			FieldB int
+			FieldC bool
+		}
+
+		Dst struct {
+			FieldA string
+			FieldB float64
+		}
+	)
+
+	src := &Src{"FieldA", 42, true}
+	dst := &Dst{"DoNotWant", 3.14}
+
+	if !StructPartialEqual(src, dst) {
+		t.Fatal("StructPartialEqual failed")
+	}
+
+}
+
 func TestLazyStructCopy(t *testing.T) {
 
 	type (
@@ -49,30 +73,6 @@ func TestFilterStruct(t *testing.T) {
 	out := FilterStruct(in, "Name", "Surname")
 	if !reflect.DeepEqual(out, &struct{ Age int }{42}) {
 		t.Fatal("FilterStruct failed")
-	}
-
-}
-
-func TestStructPartialEqual(t *testing.T) {
-
-	type (
-		Src struct {
-			FieldA string
-			FieldB int
-			FieldC bool
-		}
-
-		Dst struct {
-			FieldA string
-			FieldB float64
-		}
-	)
-
-	src := &Src{"FieldA", 42, true}
-	dst := &Dst{"DoNotWant", 3.14}
-
-	if !StructPartialEqual(src, dst) {
-		t.Fatal("StructPartialEqual failed")
 	}
 
 }
