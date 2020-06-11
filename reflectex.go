@@ -1,4 +1,4 @@
-// Copyright 2019 Vedran Vuk. All rights reserved.
+// Copyright 2020 Vedran Vuk. All rights reserved.
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
 
@@ -6,6 +6,7 @@
 package reflectex
 
 import (
+	"encoding"
 	"reflect"
 	"sort"
 	"strconv"
@@ -27,10 +28,9 @@ var (
 	ErrConvert = ErrReflectEx.WrapFormat("cannot convert '%s' to type '%s'")
 )
 
-// LazyStructCopy copies values from src fields that have
-// a coresponding field in dst to that field in dst.
-// Fields must have same name and type. Tags are ignored.
-// src and dest must be of struct type and addressable.
+// LazyStructCopy copies values from src fields that have a coresponding field
+// in dst to that field in dst. Fields must have same name and type. Tags are
+// ignored. src and dest must be of struct type and addressable.
 func LazyStructCopy(src, dst interface{}) error {
 	srcv := reflect.Indirect(reflect.ValueOf(src))
 	dstv := reflect.Indirect(reflect.ValueOf(dst))
@@ -108,110 +108,204 @@ func StructPartialEqual(x, y interface{}) bool {
 	return false
 }
 
-// StringToValue sets v's value to a value parsed from s.
-// s must be convertible to v or an error is returned.
-//
-// TODO Describe syntax.
-func StringToValue(s string, v reflect.Value) (err error) {
-	if !v.IsValid() {
-		return ErrInvalidParam
+// StringToBool converts a string to a bool.
+func StringToBool(in string, out reflect.Value) error {
+	b, err := strconv.ParseBool(in)
+	if err != nil {
+		return err
 	}
-	var parsedval reflect.Value
-	switch v.Kind() {
-	case reflect.Bool:
-		var b bool
-		b, err = strconv.ParseBool(s)
-		if err != nil {
-			break
-		}
-		parsedval = reflect.ValueOf(b)
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		var n int64
-		n, err = strconv.ParseInt(s, 10, 64)
-		if err != nil {
-			break
-		}
-		parsedval = reflect.ValueOf(n).Convert(v.Type())
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		var n uint64
-		n, err = strconv.ParseUint(s, 10, 64)
-		if err != nil {
-			break
-		}
-		parsedval = reflect.ValueOf(n).Convert(v.Type())
-	case reflect.Float32:
-		var n float64
-		n, err = strconv.ParseFloat(s, 32)
-		if err != nil {
-			break
-		}
-		parsedval = reflect.ValueOf(n).Convert(v.Type())
-	case reflect.Float64:
-		var n float64
-		n, err = strconv.ParseFloat(s, 64)
-		if err != nil {
-			break
-		}
-		parsedval = reflect.ValueOf(n).Convert(v.Type())
-	case reflect.Complex64:
-		// TODO
-	case reflect.Complex128:
-		// TODO
-	case reflect.String:
-		parsedval = reflect.ValueOf(s)
-	case reflect.Array:
-		parsedval = reflect.Indirect(reflect.New(v.Type()))
-		a := strings.Split(s, ",")
-		for i, l := 0, v.Len(); i < l && i < len(a); i++ {
-			if err = StringToValue(strings.TrimSpace(a[i]), parsedval.Index(i)); err != nil {
-				break
-			}
-		}
-	case reflect.Slice:
-		a := strings.Split(s, ",")
-		parsedval = reflect.MakeSlice(reflect.SliceOf(v.Type().Elem()), len(a), len(a))
-		for i := 0; i < len(a); i++ {
-			if err = StringToValue(a[i], parsedval.Index(i)); err != nil {
-				break
-			}
-		}
-	case reflect.Map:
-		mt := reflect.MapOf(v.Type().Key(), v.Type().Elem())
-		parsedval = reflect.MakeMap(mt)
-		a := strings.Split(s, ",")
-		for _, s := range a {
-			pair := strings.Split(s, "=")
-			if len(pair) != 2 {
-				err = ErrParse
-				break
-			}
-			key := reflect.Indirect(reflect.New(mt.Key()))
-			if err = StringToValue(pair[0], key); err != nil {
-				break
-			}
-			val := reflect.Indirect(reflect.New(mt.Elem()))
-			if err = StringToValue(pair[1], val); err != nil {
-				break
-			}
-			parsedval.SetMapIndex(key, val)
-		}
-	case reflect.Struct:
-		// TODO
-	case reflect.Func:
-		// TODO
-	case reflect.Chan:
-		// TODO
-	default:
-		err = ErrUnsupported
-	}
-	if parsedval.IsValid() {
-		v.Set(parsedval)
-	}
-	return err
+	out.Set(reflect.ValueOf(b))
+	return nil
 }
 
-// StringToInterface or error.
-func StringToInterface(s string, i interface{}) error {
-	v := reflect.Indirect(reflect.ValueOf(i))
-	return StringToValue(s, v)
+// StringToInt converts a string to a int of any width.
+func StringToInt(in string, out reflect.Value) error {
+	n, err := strconv.ParseInt(in, 10, 64)
+	if err != nil {
+		return err
+	}
+	out.Set(reflect.ValueOf(n).Convert(out.Type()))
+	return nil
+}
+
+// StringToUint converts a string to an uint of any width.
+func StringToUint(in string, out reflect.Value) error {
+	n, err := strconv.ParseUint(in, 10, 64)
+	if err != nil {
+		return err
+	}
+	out.Set(reflect.ValueOf(n).Convert(out.Type()))
+	return nil
+}
+
+// StringToFloat32 converts a string to a float32.
+func StringToFloat32(in string, out reflect.Value) error {
+	n, err := strconv.ParseFloat(in, 32)
+	if err != nil {
+		return err
+	}
+	out.Set(reflect.ValueOf(n).Convert(out.Type()))
+	return nil
+}
+
+// StringToFloat64 converts a string to a float64.
+func StringToFloat64(in string, out reflect.Value) error {
+	n, err := strconv.ParseFloat(in, 64)
+	if err != nil {
+		return err
+	}
+	out.Set(reflect.ValueOf(n).Convert(out.Type()))
+	return nil
+}
+
+// StringToComplex64 converts a string to a complex64.
+func StringToComplex64(in string, out reflect.Value) error {
+	// TODO Implement StringToComplex64
+	return nil
+}
+
+// StringToComplex128 converts a string to a complex128.
+func StringToComplex128(in string, out reflect.Value) error {
+	// TODO Implement StringToComplex128
+	return nil
+}
+
+// StringToString converts a string to a string.
+// A real eye opener.
+func StringToString(in string, out reflect.Value) error {
+	out.Set(reflect.ValueOf(in))
+	return nil
+}
+
+// StringToArray converts a string to an array.
+func StringToArray(in string, out reflect.Value) error {
+	v := reflect.Indirect(reflect.New(out.Type()))
+	a := strings.Split(in, ",")
+	for i, l := 0, out.Len(); i < l && i < len(a); i++ {
+		if err := StringToValue(strings.TrimSpace(a[i]), v.Index(i)); err != nil {
+			return err
+		}
+	}
+	out.Set(v)
+	return nil
+}
+
+// StringToSlice converts a string to a slice.
+func StringToSlice(in string, out reflect.Value) error {
+	a := strings.Split(in, ",")
+	parsedval := reflect.MakeSlice(reflect.SliceOf(out.Type().Elem()), len(a), len(a))
+	for i := 0; i < len(a); i++ {
+		if err := StringToValue(a[i], parsedval.Index(i)); err != nil {
+			return err
+		}
+	}
+	out.Set(parsedval)
+	return nil
+}
+
+// StringToMap converts a string to a map.
+func StringToMap(in string, out reflect.Value) error {
+	mt := reflect.MapOf(out.Type().Key(), out.Type().Elem())
+	parsedval := reflect.MakeMap(mt)
+	a := strings.Split(in, ",")
+	for _, s := range a {
+		pair := strings.Split(s, "=")
+		if len(pair) != 2 {
+			return ErrParse
+		}
+		key := reflect.Indirect(reflect.New(mt.Key()))
+		if err := StringToValue(pair[0], key); err != nil {
+			return err
+		}
+		val := reflect.Indirect(reflect.New(mt.Elem()))
+		if err := StringToValue(pair[1], val); err != nil {
+			return err
+		}
+		parsedval.SetMapIndex(key, val)
+	}
+	out.Set(parsedval)
+	return nil
+}
+
+// StringToStruct converts a string to a struct.
+func StringToStruct(in string, out reflect.Value) error {
+	// TODO Implement StringToStruct
+	return nil
+}
+
+// StringToValue intends to set out to a value parsed from in which must be
+// convertible to out or an error is returned. If out is a compound type its'
+// value(s) is replaced.
+//
+// StringToValue tries to be a one call converter to many different value kinds
+// in one unifying call, primarily for conversion of simple types such as bools
+// and numbers and types which implement TextUnmarshaler. Parsing compound
+// types like arrays, slices, maps and structs requires a defined syntax so a
+// simple, possibly logical syntax is implemented for completeness sake, as
+// described:
+//
+// Array and Slice: Values enclosed in square brackets, delimited by comma.
+// Example: [0,1,2,3,4]
+//
+// Map: Key/Value pairs enclosed in square brackets, delimited by comma.
+// Example:[key1=value1,key2=value2,keyN=valueN]
+//
+// Struct: Values enclosed in curly braces, delimited by comma.
+// Example:{value1,value2,[1,2,3],[key1=value1,key2=value2],{value1,value2}}
+//
+// Keys and Values can be enclosed in double quotes to retain spaces and
+// special characters. Inner quotes must be escaped. Basically a mini-json.
+//
+// Pointers, chans and func are unsupported.
+//
+// If an error occurs it is returned.
+func StringToValue(in string, out reflect.Value) error {
+
+	bum, ok := out.Interface().(encoding.TextUnmarshaler)
+	if ok {
+		if err := bum.UnmarshalText([]byte(in)); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	out = reflect.Indirect(out)
+	if !out.IsValid() {
+		return ErrInvalidParam
+	}
+
+	switch out.Kind() {
+	case reflect.Bool:
+		return StringToBool(in, out)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return StringToInt(in, out)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return StringToUint(in, out)
+	case reflect.Float32:
+		return StringToFloat32(in, out)
+	case reflect.Float64:
+		return StringToFloat64(in, out)
+	case reflect.Complex64:
+		return StringToComplex64(in, out)
+	case reflect.Complex128:
+		return StringToComplex128(in, out)
+	case reflect.String:
+		return StringToString(in, out)
+	case reflect.Array:
+		return StringToArray(in, out)
+	case reflect.Slice:
+		return StringToSlice(in, out)
+	case reflect.Map:
+		return StringToMap(in, out)
+	case reflect.Struct:
+		return StringToStruct(in, out)
+	}
+	return ErrUnsupported
+}
+
+// StringToInterface converts string in to out which must be a pointer to an
+// allocated memory defining a type compatible to data contained in string
+// according to rules defined in description of StringToInterface.
+func StringToInterface(in string, out interface{}) error {
+	return StringToValue(in, reflect.ValueOf(out))
 }
