@@ -26,6 +26,9 @@ var (
 	ErrUnsupported = ErrReflectEx.Wrap("unsupported value")
 	// ErrConvert is returned when a conversion is unable to complete.
 	ErrConvert = ErrReflectEx.WrapFormat("cannot convert '%s' to type '%s'")
+
+	// ErrNotImplemented help.
+	ErrNotImplemented = ErrReflectEx.WrapFormat("NOT IMPLEMENTED '%s'")
 )
 
 // StructPartialEqual compares two structs and tells if there is at least
@@ -78,8 +81,10 @@ func LazyStructCopy(src, dst interface{}) error {
 
 // FilterStruct returns a copy of in struct with specified fields removed.
 // In must be a pointer to a struct or a struct value.
+// Values of non-filtered fields are copied from the source struct to result.
 // Returned value is a struct value or nil in case of an error.
 func FilterStruct(in interface{}, filter ...string) interface{} {
+
 	v := reflect.Indirect(reflect.ValueOf(in))
 	if !v.IsValid() {
 		return nil
@@ -87,24 +92,28 @@ func FilterStruct(in interface{}, filter ...string) interface{} {
 	if v.Kind() != reflect.Struct {
 		return nil
 	}
+
+	sort.Strings(filter)
+
 	fields := []reflect.StructField{}
 	for i := 0; i < v.NumField(); i++ {
 		if !v.Field(i).CanSet() {
 			continue
 		}
-		sort.Strings(filter)
 		pos := sort.SearchStrings(filter, v.Type().Field(i).Name)
 		if pos < len(filter) && filter[pos] == v.Type().Field(i).Name {
 			continue
 		}
 		fields = append(fields, v.Type().Field(i))
 	}
+
 	structType := reflect.StructOf(fields)
 	structVal := reflect.New(structType)
 
 	if err := LazyStructCopy(v.Interface(), structVal.Interface()); err != nil {
 		return nil
 	}
+
 	return structVal.Interface()
 }
 
@@ -161,13 +170,14 @@ func StringToFloat64Value(in string, out reflect.Value) error {
 // StringToComplex64Value converts a string to a complex64.
 func StringToComplex64Value(in string, out reflect.Value) error {
 	// TODO Implement StringToComplex64
-	return nil
+	return ErrNotImplemented.WrapArgs("StringToComplex64Value")
 }
 
 // StringToComplex128Value converts a string to a complex128.
 func StringToComplex128Value(in string, out reflect.Value) error {
 	// TODO Implement StringToComplex128
-	return nil
+	return ErrNotImplemented.WrapArgs("StringToComplex128Value")
+
 }
 
 // StringToStringValue converts a string to a string.
@@ -230,7 +240,8 @@ func StringToMapValue(in string, out reflect.Value) error {
 // StringToStructValue converts a string to a struct.
 func StringToStructValue(in string, out reflect.Value) error {
 	// TODO Implement StringToStruct
-	return nil
+	return ErrNotImplemented.WrapArgs("StringToStructValue")
+
 }
 
 // StringToValue intends to set out to a value parsed from in which must be
