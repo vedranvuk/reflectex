@@ -81,7 +81,7 @@ func LazyStructCopy(src, dst interface{}) error {
 
 // FilterStruct returns a copy of in struct with specified fields removed.
 // In must be a pointer to a struct or a struct value.
-// Values of non-filtered fields are copied from the source struct to result.
+// Values of non-filtered fields are not copied from the source to result.
 // Returned value is a struct value or nil in case of an error.
 func FilterStruct(in interface{}, filter ...string) interface{} {
 
@@ -95,7 +95,7 @@ func FilterStruct(in interface{}, filter ...string) interface{} {
 
 	sort.Strings(filter)
 
-	fields := []reflect.StructField{}
+	fields := make([]reflect.StructField, 0, v.NumField())
 	for i := 0; i < v.NumField(); i++ {
 		if !v.Field(i).CanSet() {
 			continue
@@ -109,10 +109,6 @@ func FilterStruct(in interface{}, filter ...string) interface{} {
 
 	structType := reflect.StructOf(fields)
 	structVal := reflect.New(structType)
-
-	if err := LazyStructCopy(v.Interface(), structVal.Interface()); err != nil {
-		return nil
-	}
 
 	return structVal.Interface()
 }
