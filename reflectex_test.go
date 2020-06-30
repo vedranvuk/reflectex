@@ -71,7 +71,7 @@ func TestFilterStruct(t *testing.T) {
 
 	in := &Test{"Foo", "Bar", 42, true}
 	out := FilterStruct(in, "Name", "Surname")
-	if !reflect.DeepEqual(out, &struct{ Age int }{42}) {
+	if !reflect.DeepEqual(out, &struct{ Age int }{0}) {
 		t.Fatal("FilterStruct failed")
 	}
 
@@ -195,6 +195,74 @@ func TestStringToInterface(t *testing.T) {
 	if err := StringToInterface("allice=small,julie=petite,annie=fat(ish)", &m); err != nil {
 		t.Fatal("map", err)
 	}
+}
+
+func TestCompareInterfaceInt(t *testing.T) {
+	if CompareInterface(2, 2) != 0 {
+		t.Fatal("CompareInterface failed.")
+	}
+	if CompareInterface(0, 2) != -1 {
+		t.Fatal("CompareInterface failed.")
+	}
+	if CompareInterface(2, 0) != 1 {
+		t.Fatal("CompareInterface failed.")
+	}
+}
+
+func TestCompareInterfaceArraySlice(t *testing.T) {
+	// TODO todo
+}
+
+func TestCompareInterfaceStruct(t *testing.T) {
+
+	type A struct {
+		Name   string
+		Age    int
+		hidden bool
+	}
+
+	type B struct {
+		Age  int
+		Name string
+	}
+
+	type C struct {
+		FOO string
+		BAR int
+	}
+
+	type D struct {
+		Field interface{}
+	}
+
+	if CompareInterface(&A{}, &A{}) != 0 {
+		t.Fatal("TestCompareInterfaceStruct failed")
+	}
+
+	if CompareInterface(&A{}, &B{}) != 0 {
+		t.Fatal("TestCompareInterfaceStruct failed")
+	}
+
+	if CompareInterface(&A{}, &C{}) != -1 {
+		t.Fatal("TestCompareInterfaceStruct failed")
+	}
+
+	if CompareInterface(&C{}, &A{}) != 1 {
+		t.Fatal("TestCompareInterfaceStruct failed")
+	}
+
+	if CompareInterface(&C{"Foo", 42}, &C{"Foo", 43}) != -1 {
+		t.Fatal("TestCompareInterfaceStruct failed")
+	}
+
+	if CompareInterface(&C{"Bar", 1337}, &C{"Bar", 1337}) != 0 {
+		t.Fatal("TestCompareInterfaceStruct failed")
+	}
+
+	if CompareInterface(&D{42}, &D{42}) != 0 {
+		t.Fatal("TestCompareInterfaceStruct failed")
+	}
+
 }
 
 func BenchmarkStructPartialEqual(b *testing.B) {
