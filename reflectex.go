@@ -6,8 +6,8 @@
 package reflectex
 
 import (
-	"bytes"
 	"encoding"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -357,8 +357,8 @@ func compareKind(a, b reflect.Kind) int {
 // keys are compared for same kinds, then key names and finally equal values.
 // Comparison is done in ascending order after converting keys to strings/bytes.
 //
-// Pointer types are dereferenced do their values before comparison. This
-// includes UnsafePointer and Uintptr.
+// Pointer types are dereferenced do their values before comparison. Untyped
+// pointers are compared by their address numerically.
 //
 // Complex numbers are compared as strings.
 //
@@ -376,29 +376,18 @@ func CompareValues(a, b reflect.Value) int {
 	// Dereference all pointers to their concrete value.
 	// TODO sync dereference.
 
-	if a.Kind() == reflect.Ptr {
-		for {
-			a = a.Elem()
-			if a.Kind() != reflect.Ptr {
-				break
-			}
-		}
+	for a.Kind() == reflect.Ptr {
+		a = a.Elem()
 	}
 
-	if b.Kind() == reflect.Ptr {
-		for {
-			b = b.Elem()
-			if b.Kind() != reflect.Ptr {
-				break
-			}
-		}
+	for b.Kind() == reflect.Ptr {
+		b = b.Elem()
 	}
 
-	// TODO Dereference interfaces.
-
-	// Compare by reflect.Kind.
+	// Compare per reflect.Kind.
 
 	switch a.Kind() {
+
 	case reflect.Bool:
 		if a.Bool() == b.Bool() {
 			return 0
@@ -420,7 +409,8 @@ func CompareValues(a, b reflect.Value) int {
 		}
 		return -1
 
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32,
+		reflect.Uint64, reflect.Uintptr:
 		if res := compareKind(a.Kind(), b.Kind()); res != 0 {
 			return res
 		}
@@ -443,24 +433,30 @@ func CompareValues(a, b reflect.Value) int {
 			return 1
 		}
 		return -1
+
 	case reflect.Complex64, reflect.Complex128:
 		if res := compareKind(a.Kind(), b.Kind()); res != 0 {
 			return res
 		}
-		if a.String() == b.String() {
+		if fmt.Sprint(a.Complex()) == fmt.Sprint(b.Complex()) {
 			return 0
 		}
-		if a.String() > b.String() {
+		if fmt.Sprint(a.Complex()) > fmt.Sprint(b.Complex()) {
 			return 1
 		}
 		return -1
+
 	case reflect.Array, reflect.Slice:
-		// TODO Compare indices sequentially.
 		if res := compareKind(a.Kind(), b.Kind()); res != 0 {
 			return res
 		}
 		if a.Len() == b.Len() {
-			return bytes.Compare(a.Bytes(), b.Bytes())
+			for i := 0; i < a.Len(); i++ {
+				if res := CompareValues(a.Index(i), b.Index(i)); res != 0 {
+					return res
+				}
+			}
+			return 0
 		}
 		if a.Len() > b.Len() {
 			return 1
@@ -561,13 +557,19 @@ func CompareValues(a, b reflect.Value) int {
 		}
 
 	case reflect.Interface:
+		return CompareValues(reflect.ValueOf(a.Interface()), reflect.ValueOf(b.Interface()))
 
-	case reflect.Uintptr:
-	case reflect.Ptr:
-	case reflect.UnsafePointer:
+	case reflect.Ptr, reflect.UnsafePointer:
+		if a.Pointer() == b.Pointer() {
+			return 0
+		}
+		if a.Pointer() > b.Pointer() {
+			return 1
+		}
+		return -1
 
 	default:
-		// Ignore, return 0.
+		// Return 0 by default.
 	}
 
 	return 0
