@@ -174,7 +174,6 @@ func StringToComplex64Value(in string, out reflect.Value) error {
 func StringToComplex128Value(in string, out reflect.Value) error {
 	// TODO Implement StringToComplex128
 	return ErrNotImplemented.WrapArgs("StringToComplex128Value")
-
 }
 
 // StringToStringValue converts a string to a string.
@@ -362,7 +361,7 @@ func compareKind(a, b reflect.Kind) int {
 //
 // Complex numbers are compared as strings.
 //
-// Channel and func types are not supported.
+// Channel and func types are not supported, are ignored and will return 0.
 //
 // If an error occurs it is returned with a compare value that should be
 // disregarded.
@@ -374,7 +373,6 @@ func CompareValues(a, b reflect.Value) int {
 	}
 
 	// Dereference all pointers to their concrete value.
-	// TODO sync dereference.
 
 	for a.Kind() == reflect.Ptr {
 		a = a.Elem()
