@@ -31,7 +31,6 @@ func TestStructPartialEqual(t *testing.T) {
 	if !StructPartialEqual(src, dst) {
 		t.Fatal("StructPartialEqual failed")
 	}
-
 }
 
 func TestLazyStructCopy(t *testing.T) {
@@ -74,7 +73,6 @@ func TestFilterStruct(t *testing.T) {
 	if !reflect.DeepEqual(out, &struct{ Age int }{0}) {
 		t.Fatal("FilterStruct failed")
 	}
-
 }
 
 func TestStringToValueTextUnmarshaler(t *testing.T) {
@@ -91,7 +89,6 @@ func TestStringToValueTextUnmarshaler(t *testing.T) {
 		t.Logf("out: %#v\n", val)
 		t.Fatal("StringToValue(TextUnmarshaler) failed")
 	}
-
 }
 
 func TestStringToValueBool(t *testing.T) {
@@ -105,7 +102,6 @@ func TestStringToValueBool(t *testing.T) {
 	if !val {
 		t.Fatal("StringToValue(bool) failed")
 	}
-
 }
 
 func TestStringToValueInt(t *testing.T) {
@@ -119,7 +115,6 @@ func TestStringToValueInt(t *testing.T) {
 	if val != -42 {
 		t.Fatal("StringToValue(int) failed")
 	}
-
 }
 
 func TestStringToValueUint(t *testing.T) {
@@ -133,7 +128,6 @@ func TestStringToValueUint(t *testing.T) {
 	if val != 1337 {
 		t.Fatal("StringToValue(uint) failed")
 	}
-
 }
 
 func TestStringToValueFloat32(t *testing.T) {
@@ -147,7 +141,6 @@ func TestStringToValueFloat32(t *testing.T) {
 	if val != 3.14 {
 		t.Fatal("StringToValue(float32) failed")
 	}
-
 }
 
 func TestStringToValueFloat64(t *testing.T) {
@@ -161,7 +154,6 @@ func TestStringToValueFloat64(t *testing.T) {
 	if val != 3.14 {
 		t.Fatal("StringToValue(float64) failed")
 	}
-
 }
 
 func TestStringToPointerValue(t *testing.T) {
@@ -175,7 +167,6 @@ func TestStringToPointerValue(t *testing.T) {
 	if *val != 69 {
 		t.Fatal("StringToValue(pointer) failed")
 	}
-
 }
 
 func TestStringToDeepPointerValue(t *testing.T) {
@@ -187,9 +178,8 @@ func TestStringToDeepPointerValue(t *testing.T) {
 		t.Fatal(err)
 	}
 	if ***val != 69 {
-		t.Fatal("StringToValue(pointer) failed")
+		t.Fatal("StringToValue(deeppointer) failed")
 	}
-
 }
 
 func TestStringToInterface(t *testing.T) {

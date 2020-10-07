@@ -235,13 +235,6 @@ func StringToMapValue(in string, out reflect.Value) error {
 
 // StringToPointerValue converts a string to a pointer.
 func StringToPointerValue(in string, out reflect.Value) error {
-
-	/*
-		if out.IsZero() {
-			out.Set(reflect.New(out.Type()).Elem())
-		}
-	*/
-
 	nv := reflect.New(out.Type().Elem())
 	if err := StringToValue(in, reflect.Indirect(nv)); err != nil {
 		return err
