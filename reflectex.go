@@ -233,6 +233,23 @@ func StringToMapValue(in string, out reflect.Value) error {
 	return nil
 }
 
+// StringToPointerValue converts a string to a pointer.
+func StringToPointerValue(in string, out reflect.Value) error {
+
+	/*
+		if out.IsZero() {
+			out.Set(reflect.New(out.Type()).Elem())
+		}
+	*/
+
+	nv := reflect.New(out.Type().Elem())
+	if err := StringToValue(in, reflect.Indirect(nv)); err != nil {
+		return err
+	}
+	out.Set(nv)
+	return nil
+}
+
 // StringToStructValue converts a string to a struct.
 func StringToStructValue(in string, out reflect.Value) error {
 	// TODO Implement StringToStruct
@@ -275,7 +292,6 @@ func StringToValue(in string, out reflect.Value) error {
 		return nil
 	}
 
-	out = reflect.Indirect(out)
 	if !out.IsValid() {
 		return ErrInvalidParam
 	}
@@ -305,6 +321,8 @@ func StringToValue(in string, out reflect.Value) error {
 		return StringToMapValue(in, out)
 	case reflect.Struct:
 		return StringToStructValue(in, out)
+	case reflect.Ptr:
+		return StringToPointerValue(in, out)
 	}
 	return ErrUnsupported
 }
@@ -313,7 +331,7 @@ func StringToValue(in string, out reflect.Value) error {
 // allocated memory defining a type compatible to data contained in string
 // according to rules defined in description of StringToValue.
 func StringToInterface(in string, out interface{}) error {
-	return StringToValue(in, reflect.ValueOf(out))
+	return StringToValue(in, reflect.Indirect(reflect.ValueOf(out)))
 }
 
 // compareKind compares a and b reflect.Kind as integer index in enumerarion and

@@ -164,6 +164,34 @@ func TestStringToValueFloat64(t *testing.T) {
 
 }
 
+func TestStringToPointerValue(t *testing.T) {
+
+	in := "69"
+	var val *int
+	out := reflect.Indirect(reflect.ValueOf(&val))
+	if err := StringToValue(in, out); err != nil {
+		t.Fatal(err)
+	}
+	if *val != 69 {
+		t.Fatal("StringToValue(pointer) failed")
+	}
+
+}
+
+func TestStringToDeepPointerValue(t *testing.T) {
+
+	in := "69"
+	var val ***int
+	out := reflect.Indirect(reflect.ValueOf(&val))
+	if err := StringToValue(in, out); err != nil {
+		t.Fatal(err)
+	}
+	if ***val != 69 {
+		t.Fatal("StringToValue(pointer) failed")
+	}
+
+}
+
 func TestStringToInterface(t *testing.T) {
 
 	s := ""
@@ -363,7 +391,6 @@ func TestCompareInterfaceStruct(t *testing.T) {
 	if CompareInterfaces(&D{42}, &D{42}) != 0 {
 		t.Fatal("TestCompareInterfaceStruct failed")
 	}
-
 }
 
 func TestCompareInterfacesInterface(t *testing.T) {
