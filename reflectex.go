@@ -166,14 +166,22 @@ func StringToFloat64Value(in string, out reflect.Value) error {
 
 // StringToComplex64Value converts a string to a complex64.
 func StringToComplex64Value(in string, out reflect.Value) error {
-	// TODO Implement StringToComplex64
-	return ErrNotImplemented.WrapArgs("StringToComplex64Value")
+	n, err := strconv.ParseComplex(in, 64)
+	if err != nil {
+		return err
+	}
+	out.Set(reflect.ValueOf(n).Convert(out.Type()))
+	return nil
 }
 
 // StringToComplex128Value converts a string to a complex128.
 func StringToComplex128Value(in string, out reflect.Value) error {
-	// TODO Implement StringToComplex128
-	return ErrNotImplemented.WrapArgs("StringToComplex128Value")
+	n, err := strconv.ParseComplex(in, 128)
+	if err != nil {
+		return err
+	}
+	out.Set(reflect.ValueOf(n).Convert(out.Type()))
+	return nil
 }
 
 // StringToStringValue converts a string to a string.
@@ -233,6 +241,12 @@ func StringToMapValue(in string, out reflect.Value) error {
 	return nil
 }
 
+// StringToStructValue converts a string to a struct.
+func StringToStructValue(in string, out reflect.Value) error {
+	// TODO Implement StringToStruct
+	return ErrNotImplemented.WrapArgs("StringToStructValue")
+}
+
 // StringToPointerValue converts a string to a pointer.
 func StringToPointerValue(in string, out reflect.Value) error {
 	nv := reflect.New(out.Type().Elem())
@@ -241,12 +255,6 @@ func StringToPointerValue(in string, out reflect.Value) error {
 	}
 	out.Set(nv)
 	return nil
-}
-
-// StringToStructValue converts a string to a struct.
-func StringToStructValue(in string, out reflect.Value) error {
-	// TODO Implement StringToStruct
-	return ErrNotImplemented.WrapArgs("StringToStructValue")
 }
 
 // StringToValue intends to set out to a value parsed from in which must be

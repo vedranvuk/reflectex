@@ -156,6 +156,32 @@ func TestStringToValueFloat64(t *testing.T) {
 	}
 }
 
+func TestStringToValueComplex64(t *testing.T) {
+
+	val := complex64(complex(0, 0))
+	in := "3.14+10i"
+	out := reflect.Indirect(reflect.ValueOf(&val))
+	if err := StringToValue(in, out); err != nil {
+		t.Fatal(err)
+	}
+	if val != 3.14+10i {
+		t.Fatal("StringToValue(complex64) failed")
+	}
+}
+
+func TestStringToValueComplex128(t *testing.T) {
+
+	val := complex128(complex(0, 0))
+	in := "3.14+10i"
+	out := reflect.Indirect(reflect.ValueOf(&val))
+	if err := StringToValue(in, out); err != nil {
+		t.Fatal(err)
+	}
+	if val != 3.14+10i {
+		t.Fatal("StringToValue(complex128) failed")
+	}
+}
+
 func TestStringToPointerValue(t *testing.T) {
 
 	in := "69"
