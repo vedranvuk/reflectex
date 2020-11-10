@@ -268,19 +268,16 @@ func StringToPointerValue(in string, out reflect.Value) error {
 // simple, possibly logical syntax is implemented for completeness sake, as
 // described:
 //
-// Array and Slice: Values enclosed in square brackets, delimited by comma.
-// Example: [0,1,2,3,4]
+// Array and Slice: Values delimited by comma.
+// Example: 0,1,2,3,4
 //
-// Map: Key/Value pairs enclosed in square brackets, delimited by comma.
-// Example:[key1=value1,key2=value2,keyN=valueN]
+// Map: Key=Value pairs delimited by comma.
+// Example:key1=value1,key2=value2,keyN=valueN
 //
-// Struct: Values enclosed in curly braces, delimited by comma.
-// Example:{value1,value2,[1,2,3],[key1=value1,key2=value2],{value1,value2}}
+// Struct: TODO
+// Example:TODO
 //
-// Keys and Values can be enclosed in double quotes to retain spaces and
-// special characters. Inner quotes must be escaped. Basically a mini-json.
-//
-// Pointers, chans and func are unsupported.
+// Chans and func are unsupported.
 //
 // If an error occurs it is returned.
 func StringToValue(in string, out reflect.Value) error {
