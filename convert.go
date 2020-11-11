@@ -56,9 +56,6 @@ func StringToValue(in string, out reflect.Value) error {
 		}
 		return nil
 	}
-	if !out.IsValid() {
-		return ErrInvalidParam
-	}
 	switch out.Kind() {
 	case reflect.Bool:
 		return StringToBoolValue(in, out)
@@ -167,6 +164,7 @@ func StringToStringValue(in string, out reflect.Value) error {
 }
 
 // StringToArrayValue converts a string to an array.
+// String is of the form "elem1,elem2,elemN".
 func StringToArrayValue(in string, out reflect.Value) error {
 	v := reflect.Indirect(reflect.New(out.Type()))
 	a := strings.Split(in, ",")
@@ -180,6 +178,7 @@ func StringToArrayValue(in string, out reflect.Value) error {
 }
 
 // StringToSliceValue converts a string to a slice.
+// String is of the form "elem1,elem2,elemN".
 func StringToSliceValue(in string, out reflect.Value) error {
 	a := strings.Split(in, ",")
 	parsedval := reflect.MakeSlice(reflect.SliceOf(out.Type().Elem()), len(a), len(a))
@@ -193,6 +192,7 @@ func StringToSliceValue(in string, out reflect.Value) error {
 }
 
 // StringToMapValue converts a string to a map.
+// String is of the form: "key1=val1,key2=val2,keyN=valN".
 func StringToMapValue(in string, out reflect.Value) error {
 	mt := reflect.MapOf(out.Type().Key(), out.Type().Elem())
 	parsedval := reflect.MakeMap(mt)
