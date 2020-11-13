@@ -6,6 +6,7 @@
 package reflectex
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 
@@ -103,4 +104,14 @@ func FilterStruct(in interface{}, filter ...string) interface{} {
 	structType := reflect.StructOf(fields)
 	structVal := reflect.New(structType)
 	return structVal.Interface()
+}
+
+// Show shows a reflect.Value.
+func Show(v reflect.Value) {
+	fmt.Printf(`Type:    %s 
+Kind:    %s 
+IsValid: %t 
+IsZero:  %t 
+CanAddr: %t
+`, v.Type(), v.Kind(), v.IsValid(), v.IsZero(), v.CanAddr())
 }
